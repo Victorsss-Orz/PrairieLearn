@@ -15,15 +15,9 @@ RUN export OLD_UID=$(id -u coder) && \
 	unset OLD_UID OLD_GID NEW_UID NEW_GID
 	
 # Install Python and required packages via miniconda
-USER coder
-COPY requirements.txt /
-RUN export arch=`uname -m` \
- && curl -sfLO https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-${arch}.sh \
- && /bin/bash Miniconda3-latest-Linux-${arch}.sh -b -p /home/coder/miniconda \
- && PATH="/home/coder/miniconda/bin:$PATH" \
- && /home/coder/miniconda/condabin/conda init bash \
- && conda config --add channels conda-forge \
- && conda run -n base pip install -r /requirements.txt
+USER root
+COPY install.sh requirements.txt /
+RUN /bin/bash /install.sh
 
 # Cleaning up the cache in the same step when we install is important if you
 # want to minimize the image size.
