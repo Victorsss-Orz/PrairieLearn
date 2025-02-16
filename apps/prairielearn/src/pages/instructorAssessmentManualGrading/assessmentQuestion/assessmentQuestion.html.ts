@@ -101,12 +101,72 @@ export function AssessmentQuestion({
         Back to ${assessment_set.name} ${assessment.number} Overview
       </a>
       ${aiGradingEnabled
-        ? html`
-            <form name="start-ai-grading" method="POST" id="ai-grading">
-              <input type="hidden" name="__action" value="ai_grade_assessment" />
-              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-            </form>
-          `
+        ? Modal({
+            title: 'AI Grading',
+            id: 'aiGradingModal',
+            body: html`
+              <style>
+                #hiddenDiv {
+                  display: none;
+                  margin-top: 10px;
+                  padding: 10px;
+                }
+
+                .toggleText {
+                  color: blue;
+                  text-decoration: underline;
+                  cursor: pointer;
+                }
+              </style>
+              <p>Current submissions: xxx</p>
+              <p>Current instructor graded submissions: xxx</p>
+
+              <p><span class="toggleText" onclick="toggleDiv(this)">More options</span></p>
+
+              <div id="hiddenDiv">
+                <label for="num-examples">Number of examples (between 0 and 10):</label>
+                <input type="number" id="num-examples" min="0" max="10" value="5" />
+                <hr style="height:2px; visibility:hidden; margin-bottom:-1px;" />
+                <label for="openai-api-key">OpenAI API key (leave blank to use PL API):</label>
+                <input id="openai-api-key" size="64" />
+                <hr style="height:2px; visibility:hidden; margin-bottom:-1px;" />
+                <label for="openai-organization"
+                  >OpenAI organization (leave blank to use PL API):</label
+                >
+                <input id="openai-organization" size="64" />
+                <hr style="height:2px; visibility:hidden; margin-bottom:-1px;" />
+                <p>Or some other customizable options</p>
+              </div>
+
+              <form name="start-ai-grading-test" method="POST" id="ai-grading-test">
+                <input type="hidden" name="__action" value="ai_grade_assessment_test" />
+                <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                <button type="submit" class="btn btn-primary">Test accuracy</button>
+              </form>
+
+              <script>
+                function toggleDiv(span) {
+                  var div = document.getElementById('hiddenDiv');
+                  if (div.style.display === 'none' || div.style.display === '') {
+                    div.style.display = 'block';
+                    span.textContent = 'Less options';
+                  } else {
+                    div.style.display = 'none';
+                    span.textContent = 'More options';
+                  }
+                }
+              </script>
+            `,
+            footer: html`
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+
+              <form name="start-ai-grading" method="POST" id="ai-grading">
+                <input type="hidden" name="__action" value="ai_grade_assessment" />
+                <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                <button type="submit" class="btn btn-success">Grade All</button>
+              </form>
+            `,
+          })
         : ''}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

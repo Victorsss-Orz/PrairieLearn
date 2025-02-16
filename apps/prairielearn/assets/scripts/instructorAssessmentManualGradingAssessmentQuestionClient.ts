@@ -68,11 +68,13 @@ onDocumentReady(() => {
         attributes: {
           id: 'js-ai-grade-button',
           title: 'AI grade all instances',
+          'data-toggle': 'modal',
+          'data-target': '#aiGradingModal',
         },
-        event: () => {
-          const form = document.getElementById('ai-grading') as HTMLFormElement;
-          form?.submit();
-        },
+        // event: () => {
+        //   const form = document.getElementById('ai-grading') as HTMLFormElement;
+        //   form?.submit();
+        // },
       },
       showStudentInfo: {
         text: 'Show student info',
