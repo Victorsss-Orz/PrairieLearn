@@ -143,6 +143,8 @@ router.post(
         user_id: res.locals.user.user_id,
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'ai_grade_assessment_test') {
+      throw new error.HttpStatusError(501, 'Not implemented');
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
