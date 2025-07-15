@@ -1,5 +1,5 @@
 FROM prairielearn/workspace-jupyterlab-base:latest
-ARG CACHEBUST=2025-06-15-14-13-20
+ARG CACHEBUST=2025-07-15-14-02-28
 
 USER root
 COPY install.sh requirements.txt /
