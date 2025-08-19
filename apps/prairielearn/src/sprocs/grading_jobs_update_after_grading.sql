@@ -86,6 +86,7 @@ BEGIN
     -- grade submissions in a different order than how they were saved.
     -- This does not impact instructors since there's no notion of an assessment
     -- to grade.
+    -- Victor: How would this impact backtracking grading jobs?
     PERFORM 1 FROM
         instance_questions AS iq
         JOIN variants AS v ON (v.instance_question_id = iq.id)
