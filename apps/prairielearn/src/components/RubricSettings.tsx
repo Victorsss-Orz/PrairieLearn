@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Modal, Overlay, Popover } from 'react-bootstrap';
+import { Dropdown, DropdownButton, Form, Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
 import { downloadAsJSON } from '@prairielearn/browser-utils';
@@ -107,9 +107,10 @@ export function RubricSettings({
 
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
-  const [showImportModal, setShowImportModal] = useState<boolean>(false);
+  const [showImportModal, setShowImportModal] = useState<'json' | 'link' | 'other' | null>(null);
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
   const rubricFileRef = useRef<HTMLInputElement>(null);
+  const [rubricSource, setRubricSource] = useState<string | null>(null);
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
   const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
@@ -285,19 +286,37 @@ export function RubricSettings({
 
   const resetImportModal = () => {
     setImportModalWarning(null);
+    setRubricSource(null);
   };
 
   const closeImportModal = () => {
-    setShowImportModal(false);
+    setShowImportModal(null);
   };
 
   const importRubric = async () => {
-    const input = rubricFileRef.current;
-    if (!input?.files || input.files.length === 0) {
-      setImportModalWarning('Please select a file to import.');
+    if (rubricSource) {
+      importRubricFromAssessment(rubricSource);
+    } else if (rubricFileRef.current?.files && rubricFileRef.current.files.length > 0) {
+      await importRubricFromFileUpload(rubricFileRef.current.files[0]);
+    } else {
+      setImportModalWarning(
+        'Please select from existing assessment question or select a file to import.',
+      );
       return;
     }
-    const file = input.files[0];
+  };
+
+  const importRubricFromAssessment = (rubric_id: string) => {
+    console.log(rubric_id);
+  };
+
+  const importRubricFromFileUpload = async (file: File) => {
+    // const input = rubricFileRef.current;
+    // if (!input?.files || input.files.length === 0) {
+    //   setImportModalWarning('Please select a file to import.');
+    //   return;
+    // }
+    // const file = input.files[0];
 
     try {
       const fileContent = await file.text();
@@ -799,19 +818,44 @@ export function RubricSettings({
               Add item
             </button>
           )}
-          <button type="button" className="btn btn-sm btn-primary" onClick={exportRubric}>
+          {/* <button type="button" className="btn btn-sm btn-primary" onClick={exportRubric}>
             <i className="fas fa-download" aria-hidden="true" /> Export rubric
-          </button>
+          </button> */}
           {hasCourseInstancePermissionEdit && (
-            <button
-              id="import-rubric-button"
-              type="button"
-              className="btn btn-sm btn-primary"
-              onClick={() => setShowImportModal(!showImportModal)}
-            >
-              <i className="fas fa-upload" aria-hidden="true" /> Import rubric
-            </button>
+            // <button
+            //   id="import-rubric-button"
+            //   type="button"
+            //   className="btn btn-sm btn-primary"
+            //   onClick={() => setShowImportModal(!showImportModal)}
+            // >
+            //   <i className="fas fa-upload" aria-hidden="true" /> Import rubric (change this to
+            //   dropdown, then have import from json, copy from question, ...)
+            // </button>
+
+            <DropdownButton id="manage-rubric-button" title="Manage rubric" drop="down">
+              <Dropdown.Item as="button" onClick={() => setShowImportModal('json')}>
+                Import from JSON
+              </Dropdown.Item>
+              <Dropdown.Item as="button" onClick={exportRubric}>
+                Export to JSON
+              </Dropdown.Item>
+              <Dropdown.Divider />
+              <Dropdown.Item as="button" onClick={() => setShowImportModal('other')}>
+                Copy from assessment question (Frida might not need this)
+              </Dropdown.Item>
+              <Dropdown.Item as="button" onClick={() => setShowImportModal('other')}>
+                Copy from other questions (Frida might not need this)
+              </Dropdown.Item>
+              <Dropdown.Divider />
+              <Dropdown.Item as="button" onClick={() => setShowImportModal('link')}>
+                Link to question rubric (or keep syncing with question rubric)
+              </Dropdown.Item>
+              <Dropdown.Item as="button" disabled={true} onClick={() => setShowImportModal('link')}>
+                Unlink question rubric
+              </Dropdown.Item>
+            </DropdownButton>
           )}
+          <span>Need a way indicate to the instructor (somehow, somewhere) whether the rubric is in sync with a file, and which file</span>
           <Modal
             show={showImportModal}
             size="lg"
@@ -822,18 +866,54 @@ export function RubricSettings({
               <Modal.Title>Import rubric settings</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-              <label className="form-label" htmlFor="rubric-settings-file-input">
-                Choose file
-              </label>
-              <input
-                ref={rubricFileRef}
-                type="file"
-                name="file"
-                className="form-control"
-                id="rubric-settings-file-input"
-                accept="application/json,.json"
-                required
-              />
+              {showImportModal === 'other' && (
+                <>
+                  <label className="form-label" htmlFor="rubric-settings-from-assessment-question">
+                    Choose existing instance of the same question
+                  </label>
+                  <Form.Select
+                    id="rubric-settings-from-assessment-question"
+                    value={rubricSource ?? ''}
+                    onChange={(e) => setRubricSource(e.target.value || null)}
+                  >
+                    <option value="" />
+                    <option value="1">Spring 2026/HW11</option>
+                  </Form.Select>
+                </>
+              )}
+              {showImportModal === 'json' && (
+                <>
+                  <label className="form-label" htmlFor="rubric-settings-file-input">
+                    Or choose file
+                  </label>
+                  <input
+                    ref={rubricFileRef}
+                    type="file"
+                    name="file"
+                    className="form-control"
+                    id="rubric-settings-file-input"
+                    accept="application/json,.json"
+                    required
+                  />
+                </>
+              )}
+
+              {showImportModal === 'link' && (
+                <>
+                  <label className="form-label" htmlFor="rubric-settings-file-input">
+                    Link to question rubric
+                  </label>
+                  <Form.Select
+                    id="rubric-settings-from-assessment-question"
+                    value={rubricSource ?? ''}
+                    onChange={(e) => setRubricSource(e.target.value || null)}
+                  >
+                    <option value="new">Create new rubric file in question directory</option>
+                    <option value="rubric1.json">rubric1.json</option>
+                  </Form.Select>
+                </>
+              )}
+
               {importModalWarning && (
                 <div
                   key={importModalWarning}
@@ -860,7 +940,7 @@ export function RubricSettings({
                 className="btn btn-primary"
                 onClick={() => importRubric()}
               >
-                Upload file
+                Import settings
               </button>
             </Modal.Footer>
           </Modal>
