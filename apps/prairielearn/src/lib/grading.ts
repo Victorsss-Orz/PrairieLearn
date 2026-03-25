@@ -7,6 +7,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 
+import { aiGradeRealTime } from '../ee/lib/ai-grading/ai-grading.js';
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
@@ -16,7 +17,9 @@ import * as questionServers from '../question-servers/index.js';
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   AssessmentQuestionSchema,
+  AssessmentSchema,
   type Course,
+  CourseInstanceSchema,
   InstanceQuestionSchema,
   type Question,
   QuestionSchema,
@@ -285,17 +288,17 @@ async function selectSubmissionForGrading(
     );
     if (variantData == null) return null;
 
-    // We only select variants that will be auto-graded, so ignore this variant
-    // if this is manual grading only. Typically we would not reach this point
-    // for these cases, since the grade button is not shown to students, so this
-    // is an extra precaution.
-    if (variantData.instance_question_id == null) {
-      if (variantData.grading_method === 'Manual') return null;
-    } else {
-      if ((variantData.max_auto_points ?? 0) === 0 && (variantData.max_manual_points ?? 0) !== 0) {
-        return null;
-      }
-    }
+    // // We only select variants that will be auto-graded, so ignore this variant
+    // // if this is manual grading only. Typically we would not reach this point
+    // // for these cases, since the grade button is not shown to students, so this
+    // // is an extra precaution.
+    // if (variantData.instance_question_id == null) {
+    //   if (variantData.grading_method === 'Manual') return null;
+    // } else {
+    //   if ((variantData.max_auto_points ?? 0) === 0 && (variantData.max_manual_points ?? 0) !== 0) {
+    //     return null;
+    //   }
+    // }
 
     // Unlike the above, we can't rely solely on the UI and POST handlers to prevent
     // students from grading questions with real-time grading disabled. This is
@@ -353,6 +356,7 @@ async function selectSubmissionForGrading(
  * @param params.authn_user_id - The currently authenticated user.
  * @param params.ignoreGradeRateLimit - Whether to ignore grade rate limits.
  * @param params.ignoreRealTimeGradingDisabled - Whether to ignore real-time grading disabled checks.
+ * @param params.urlPrefix - URL prefix for the instance question, used for question and submission rendering for AI grading.
  */
 export async function gradeVariant({
   variant,
@@ -363,6 +367,7 @@ export async function gradeVariant({
   authn_user_id,
   ignoreGradeRateLimit,
   ignoreRealTimeGradingDisabled,
+  urlPrefix,
 }: {
   variant: Variant;
   check_submission_id: string | null;
@@ -372,6 +377,7 @@ export async function gradeVariant({
   authn_user_id: string | null;
   ignoreGradeRateLimit: boolean;
   ignoreRealTimeGradingDisabled: boolean;
+  urlPrefix?: string;
 }): Promise<void> {
   const question_course = await getQuestionCourse(question, variant_course);
 
@@ -389,78 +395,103 @@ export async function gradeVariant({
     if (nextGradingAllowedMs > 0) return;
   }
 
-  const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
-
-  if (question.grading_method === 'External') {
-    // For external grading we just need to trigger the grading job to start.
-    // We haven't actually graded this question yet - don't attempt
-    // to update the grading job or submission.
-    //
-    // Before starting the grading process, we need to ensure that any relevant
-    // chunks are available on disk. This uses the same list of chunks as
-    // `getContext` in `freeform.js`. We technically probably don't need to
-    // load element and element extension chunks, but we do so anyway to be
-    // consistent with the other code path.
-    await ensureChunksForCourseAsync(question_course.id, [
-      { type: 'question', questionId: question.id },
-      { type: 'clientFilesCourse' },
-      { type: 'serverFilesCourse' },
-      { type: 'elements' },
-      { type: 'elementExtensions' },
-    ]);
-    await externalGrader.beginGradingJob(grading_job.id);
-  } else {
-    // For Internal grading we call the grading code. For Manual grading, if the question
-    // reached this point, it has auto points, so it should be treated like Internal.
-    const questionModule = questionServers.getModule(question.type);
-    const { courseIssues, data } = await questionModule.grade(
-      submission,
-      variant,
+  if (question.grading_method === 'Manual') {
+    const { instance_question, assessment_question, assessment, course_instance } =
+      await sqldb.queryRow(
+        sql.select_data_for_manual_grading,
+        { instance_question_id: variant.instance_question_id },
+        z.object({
+          instance_question: InstanceQuestionSchema,
+          assessment_question: AssessmentQuestionSchema,
+          assessment: AssessmentSchema,
+          course_instance: CourseInstanceSchema,
+        }),
+      );
+    await aiGradeRealTime({
+      course: variant_course,
+      course_instance,
       question,
-      question_course,
-    );
-    const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
-
-    const studentMessage = 'Error grading submission';
-    const courseData = { variant, question, submission, course: variant_course };
-    await writeCourseIssues(
-      courseIssues,
-      variant,
-      user_id,
-      submission.auth_user_id,
-      studentMessage,
-      courseData,
-    );
-
-    const grading_job_post_update = await updateGradingJobAfterGrading({
-      grading_job_id: grading_job.id,
-      // `received_time` and `start_time` were already set when the
-      // grading job was inserted, so they'll remain unchanged.
-      // `finish_time` will be set to `now()` by this function.
-      submitted_answer: data.submitted_answer,
-      format_errors: data.format_errors,
-      gradable: !!data.gradable && !hasFatalIssue,
-      broken: hasFatalIssue,
-      params: data.params,
-      true_answer: data.true_answer,
-      feedback: data.feedback,
-      partial_scores: data.partial_scores,
-      score: data.score,
-      v2_score: data.v2_score,
+      assessment,
+      assessment_question,
+      urlPrefix: urlPrefix ?? '',
+      authn_user_id: authn_user_id ?? '',
+      user_id: user_id ?? '',
+      instance_question,
+      model_id: 'gpt-5-mini-2025-08-07',
     });
+  } else {
+    const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
+    if (question.grading_method === 'External') {
+      // For external grading we just need to trigger the grading job to start.
+      // We haven't actually graded this question yet - don't attempt
+      // to update the grading job or submission.
+      //
+      // Before starting the grading process, we need to ensure that any relevant
+      // chunks are available on disk. This uses the same list of chunks as
+      // `getContext` in `freeform.js`. We technically probably don't need to
+      // load element and element extension chunks, but we do so anyway to be
+      // consistent with the other code path.
+      await ensureChunksForCourseAsync(question_course.id, [
+        { type: 'question', questionId: question.id },
+        { type: 'clientFilesCourse' },
+        { type: 'serverFilesCourse' },
+        { type: 'elements' },
+        { type: 'elementExtensions' },
+      ]);
+      await externalGrader.beginGradingJob(grading_job.id);
+    } else {
+      // For Internal grading we call the grading code. For Manual grading, if the question
+      // reached this point, it has auto points, so it should be treated like Internal.
+      const questionModule = questionServers.getModule(question.type);
+      const { courseIssues, data } = await questionModule.grade(
+        submission,
+        variant,
+        question,
+        question_course,
+      );
+      const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
-    // If the submission was marked invalid during grading the grading
-    // job will be marked ungradable and we should bail here to prevent
-    // LTI updates.
-    if (!grading_job_post_update.gradable) return;
+      const studentMessage = 'Error grading submission';
+      const courseData = { variant, question, submission, course: variant_course };
+      await writeCourseIssues(
+        courseIssues,
+        variant,
+        user_id,
+        submission.auth_user_id,
+        studentMessage,
+        courseData,
+      );
 
-    const assessment_instance_id = await sqldb.queryOptionalScalar(
-      sql.select_assessment_for_submission,
-      { submission_id: submission.id },
-      IdSchema.nullable(),
-    );
-    if (assessment_instance_id != null) {
-      await ltiOutcomes.updateScore(assessment_instance_id);
+      const grading_job_post_update = await updateGradingJobAfterGrading({
+        grading_job_id: grading_job.id,
+        // `received_time` and `start_time` were already set when the
+        // grading job was inserted, so they'll remain unchanged.
+        // `finish_time` will be set to `now()` by this function.
+        submitted_answer: data.submitted_answer,
+        format_errors: data.format_errors,
+        gradable: !!data.gradable && !hasFatalIssue,
+        broken: hasFatalIssue,
+        params: data.params,
+        true_answer: data.true_answer,
+        feedback: data.feedback,
+        partial_scores: data.partial_scores,
+        score: data.score,
+        v2_score: data.v2_score,
+      });
+
+      // If the submission was marked invalid during grading the grading
+      // job will be marked ungradable and we should bail here to prevent
+      // LTI updates.
+      if (!grading_job_post_update.gradable) return;
+
+      const assessment_instance_id = await sqldb.queryOptionalScalar(
+        sql.select_assessment_for_submission,
+        { submission_id: submission.id },
+        IdSchema.nullable(),
+      );
+      if (assessment_instance_id != null) {
+        await ltiOutcomes.updateScore(assessment_instance_id);
+      }
     }
   }
 }
@@ -483,6 +514,7 @@ export async function saveAndGradeSubmission(
   course: Course,
   ignoreGradeRateLimit: boolean,
   ignoreRealTimeGradingDisabled: boolean,
+  urlPrefix: string,
 ) {
   const { submission_id, variant: updated_variant } = await saveSubmission(
     submissionData,
@@ -505,6 +537,7 @@ export async function saveAndGradeSubmission(
     authn_user_id: submissionData.auth_user_id,
     ignoreGradeRateLimit,
     ignoreRealTimeGradingDisabled,
+    urlPrefix,
   });
   return submission_id;
 }

@@ -668,6 +668,9 @@ export async function updateInstanceQuestionScore({
         score.feedback ||
         score.partial_scores)
     ) {
+      // if given grading job id, then update info
+      // for running real-time ai grading job
+      // other create new one
       grading_job_id = await sqldb.queryScalar(
         sql.insert_grading_job,
         {

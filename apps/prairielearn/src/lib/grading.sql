@@ -219,3 +219,15 @@ SELECT
   *
 FROM
   updated_instance_question;
+
+-- BLOCK select_data_for_manual_grading
+SELECT
+  to_jsonb(iq.*) AS instance_question,
+  to_jsonb(aq.*) AS assessment_question,
+  to_jsonb(a) AS assessment,
+  to_jsonb(ci) AS course_instance
+FROM
+  (SELECT * FROM instance_questions AS iq WHERE iq.id = $instance_question_id) AS iq
+  JOIN assessment_questions AS aq ON aq.id = iq.assessment_question_id
+  JOIN assessments AS a ON a.id = aq.assessment_id
+  JOIN course_instances AS ci ON ci.id = a.course_instance_id;

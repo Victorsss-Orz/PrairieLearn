@@ -34,6 +34,12 @@ onDocumentReady(() => {
         const externalGrading = initializeExternalGrading({ container });
         return { remove: () => externalGrading?.close() };
       }
+      if (container.dataset.gradingMethod === 'Manual'
+        // And possibly some other check for whether real-time AI grading is enabled
+      ) {
+        const manualGrading = initializeExternalGrading({container});
+        return { remove: () => manualGrading?.close() };
+      }
     },
   });
 

@@ -81,6 +81,7 @@ export async function processSubmission(
       res.locals.course,
       ignoreGradeRateLimit,
       ignoreRealTimeGradingDisabled,
+      res.locals.urlPrefix,
     );
     return submission.variant_id;
   } else if (req.body.__action === 'save') {

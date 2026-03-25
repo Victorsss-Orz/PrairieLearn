@@ -380,13 +380,13 @@ function buildLocals({
   // The method to determine if this is a manual-only question depends on the context.
   // If the question is being rendered in an assessment, we check if there are manual points and no auto points.
   // If the question is being rendered in question preview, we use the grading method as a proxy.
-  if (
-    assessment_question
-      ? !assessment_question.max_auto_points && assessment_question.max_manual_points
-      : question.grading_method === 'Manual'
-  ) {
-    locals.showGradeButton = false;
-  }
+  // if (
+  //   assessment_question
+  //     ? !assessment_question.max_auto_points && assessment_question.max_manual_points
+  //     : question.grading_method === 'Manual'
+  // ) {
+  //   locals.showGradeButton = false;
+  // }
 
   if (authz_result && !authz_result.active) {
     locals.showGradeButton = false;
