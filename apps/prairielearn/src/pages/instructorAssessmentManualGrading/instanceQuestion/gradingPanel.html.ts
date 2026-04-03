@@ -404,6 +404,7 @@ ${submission.feedback?.manual}</textarea
                     class="btn btn-primary ${selectedInstanceQuestionGroup ? 'd-none' : ''}"
                     name="__action"
                     value="add_manual_grade"
+                    data-key-binding="g"
                   >
                     Grade
                   </button>

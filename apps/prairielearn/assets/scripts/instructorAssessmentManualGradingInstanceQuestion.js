@@ -16,9 +16,7 @@ $(() => {
       !event.target.isContentEditable
     ) {
       document
-        .querySelectorAll(
-          `.js-selectable-rubric-item[data-key-binding="${event.key}"]:not(:disabled)`,
-        )
+        .querySelectorAll(`[data-key-binding="${event.key.toLowerCase()}"]:not(:disabled)`)
         .forEach((item) => item.dispatchEvent(new MouseEvent('click')));
     }
   });
