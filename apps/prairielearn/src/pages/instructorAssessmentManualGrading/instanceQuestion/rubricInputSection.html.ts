@@ -51,8 +51,10 @@ export function RubricInputSection({
         disable
           ? 'd-none'
           : ''}"
+        data-key-binding="a"
       >
         Apply adjustment
+        <span class="badge text-bg-info ms-2">A</span>
       </button>
       <div
         class="js-adjust-points-input-container w-25 ${rubric_grading?.adjust_points

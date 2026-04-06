@@ -17,7 +17,15 @@ $(() => {
     ) {
       document
         .querySelectorAll(`[data-key-binding="${event.key.toLowerCase()}"]:not(:disabled)`)
-        .forEach((item) => item.dispatchEvent(new MouseEvent('click')));
+        .forEach((item) => {
+          if (item.classList.contains('js-submission-feedback')) {
+            // Prevent default so that we don't enter this key into the feedback panel
+            event.preventDefault();
+            item.focus();
+          } else {
+            item.dispatchEvent(new MouseEvent('click'));
+          }
+        });
     }
   });
   const modal = document.querySelector('#conflictGradingJobModal');
@@ -102,7 +110,9 @@ window.resetInstructorGradingPanel = function () {
       if (!input) return;
       input.style.display = '';
       input.classList.remove('d-none');
-      input.querySelector('input')?.focus();
+      Array.from(input.querySelectorAll('input'))
+        .find((el) => el.offsetParent !== null)
+        ?.focus();
     }),
   );
   document.querySelectorAll('.js-adjust-points-points').forEach((input) =>
