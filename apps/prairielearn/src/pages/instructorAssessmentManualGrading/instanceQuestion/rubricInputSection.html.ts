@@ -196,7 +196,9 @@ function RubricItem({
           data-rubric-item-points="${item.rubric_item.points}"
           data-key-binding="${item.rubric_item.key_binding}"
         />
-        <kbd class="kbd kbd-semi-transparent">${item.rubric_item.key_binding}</kbd>
+        ${item.rubric_item.key_binding
+          ? html`<kbd class="kbd kbd-semi-transparent">${item.rubric_item.key_binding}</kbd>`
+          : ''}
         <span class="float-end text-${item.rubric_item.points >= 0 ? 'success' : 'danger'}">
           <strong>
             <span class="js-manual-grading-points" data-testid="rubric-item-points">
