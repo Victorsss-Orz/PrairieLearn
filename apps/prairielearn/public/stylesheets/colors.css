@@ -31,19 +31,6 @@
   --color-gray3: #505050;
 }
 
-.kbd {
-  display: inline-block;
-  line-height: 1;
-  margin-left: 0.5rem;
-  padding: 0.15rem 0.35rem;
-  font-weight: 600;
-}
-.kbd.kbd-semi-transparent {
-  background-color: #c9d0d78f;
-  color: inherit;
-  border: 1px solid currentColor;
-}
-
 .btn.btn-badge {
   --bs-badge-padding-x: 0.65em;
   --bs-badge-padding-y: 0.35em;

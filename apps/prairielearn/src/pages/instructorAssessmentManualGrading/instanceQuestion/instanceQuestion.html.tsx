@@ -94,6 +94,20 @@ export function InstanceQuestion({
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
       </script>
+      <style>
+        .kbd {
+          display: inline-block;
+          line-height: 1;
+          margin-left: 0.5rem;
+          padding: 0.15rem 0.35rem;
+          font-weight: 600;
+        }
+        .kbd.kbd-semi-transparent {
+          background-color: #c9d0d78f;
+          color: inherit;
+          border: 1px solid currentColor;
+        }
+      </style>
       ${resLocals.question.type !== 'Freeform'
         ? html`
             <script src="${assetPath('javascripts/lodash.min.js')}"></script>
