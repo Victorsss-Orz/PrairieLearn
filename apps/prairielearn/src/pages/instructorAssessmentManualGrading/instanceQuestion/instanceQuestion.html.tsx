@@ -98,7 +98,6 @@ export function InstanceQuestion({
         .kbd {
           display: inline-block;
           line-height: 1;
-          margin-left: 0.5rem;
           padding: 0.15rem 0.35rem;
           font-weight: 600;
         }
