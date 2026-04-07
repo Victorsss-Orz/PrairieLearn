@@ -246,7 +246,7 @@ export function GradingPanel({
         <li class="list-group-item">
           <label>
             Feedback:
-            <span class="badge text-bg-info ms-2 mb-1">F</span>
+            <kbd class="kbd mb-1 kbd-semi-transparent">F</kbd>
             <textarea
               name="submission_note"
               class="form-control js-submission-feedback"
@@ -409,7 +409,7 @@ ${submission.feedback?.manual}</textarea
                     data-key-binding="g"
                   >
                     Grade
-                    <span class="badge text-bg-info ms-2">G</span>
+                    <kbd class="kbd kbd-semi-transparent">G</kbd>
                   </button>
                 `
               : ''}

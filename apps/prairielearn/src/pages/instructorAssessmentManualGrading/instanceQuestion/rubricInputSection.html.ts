@@ -54,7 +54,7 @@ export function RubricInputSection({
         data-key-binding="a"
       >
         Apply adjustment
-        <span class="badge text-bg-info ms-2">A</span>
+        <kbd class="kbd kbd-semi-transparent">A</kbd>
       </button>
       <div
         class="js-adjust-points-input-container w-25 ${rubric_grading?.adjust_points
@@ -189,14 +189,14 @@ function RubricItem({
         <input
           type="checkbox"
           name="rubric_item_selected_manual"
-          class="js-selectable-rubric-item me-2"
+          class="js-selectable-rubric-item"
           value="${item.rubric_item.id}"
           ${item_grading?.score ? 'checked' : ''}
           ${disable ? 'disabled' : ''}
           data-rubric-item-points="${item.rubric_item.points}"
           data-key-binding="${item.rubric_item.key_binding}"
         />
-        <span class="badge text-bg-info">${item.rubric_item.key_binding}</span>
+        <kbd class="kbd kbd-semi-transparent">${item.rubric_item.key_binding}</kbd>
         <span class="float-end text-${item.rubric_item.points >= 0 ? 'success' : 'danger'}">
           <strong>
             <span class="js-manual-grading-points" data-testid="rubric-item-points">
