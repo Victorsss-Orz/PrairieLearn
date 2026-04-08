@@ -54,7 +54,7 @@ export function RubricInputSection({
         data-key-binding="a"
       >
         Apply adjustment
-        <kbd class="kbd kbd-semi-transparent ms-2">A</kbd>
+        <kbd aria-hidden="true" class="kbd kbd-semi-transparent ms-2">A</kbd>
       </button>
       <div
         class="js-adjust-points-input-container w-25 ${rubric_grading?.adjust_points
@@ -197,7 +197,9 @@ function RubricItem({
           data-key-binding="${item.rubric_item.key_binding}"
         />
         ${item.rubric_item.key_binding
-          ? html`<kbd class="kbd kbd-semi-transparent">${item.rubric_item.key_binding}</kbd>`
+          ? html`<kbd aria-hidden="true" class="kbd kbd-semi-transparent"
+              >${item.rubric_item.key_binding}</kbd
+            >`
           : ''}
         <span class="float-end text-${item.rubric_item.points >= 0 ? 'success' : 'danger'}">
           <strong>
