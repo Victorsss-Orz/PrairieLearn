@@ -403,7 +403,9 @@ ${submission.feedback?.manual}</textarea
                   <button
                     id="grade-button"
                     type="submit"
-                    class="btn btn-primary ${selectedInstanceQuestionGroup ? 'd-none' : ''}"
+                    class="btn btn-primary ${selectedInstanceQuestionGroup
+                      ? 'd-none'
+                      : 'd-inline-flex'} align-items-center"
                     name="__action"
                     value="add_manual_grade"
                     data-key-binding="g"

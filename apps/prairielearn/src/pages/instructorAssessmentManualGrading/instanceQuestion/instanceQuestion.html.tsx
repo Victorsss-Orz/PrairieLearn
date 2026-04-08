@@ -96,11 +96,13 @@ export function InstanceQuestion({
       </script>
       <style>
         .kbd {
-          <!-- display: inline-block;
-          line-height: 0.7; -->
-          padding: 0.15rem 0.35rem;
-          font-size: inherit;
+          display: inline-block;
+          margin-left: 0.5rem;
+          padding: 0.25rem;
+          font-weight: 600;
+          text-box: trim-both cap alphabetic;
         }
+
         .kbd.kbd-semi-transparent {
           background-color: #c9d0d78f;
           color: inherit;
