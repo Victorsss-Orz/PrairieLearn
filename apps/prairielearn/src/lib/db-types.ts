@@ -146,6 +146,7 @@ export const SprocAuthzAssessmentSchema = z.object({
   mode: EnumModeSchema.nullable(),
   next_active_time: z.string().nullable(),
   password: z.string().nullable(),
+  show_before_release: z.boolean(),
   show_closed_assessment: z.boolean(),
   show_closed_assessment_score: z.boolean(),
   time_limit_min: z.number().nullable(),
@@ -163,6 +164,7 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
   mode: EnumModeSchema.nullable(),
   next_active_time: z.string().nullable(),
   password: z.string().nullable(),
+  show_before_release: z.boolean(),
   show_closed_assessment: z.boolean(),
   show_closed_assessment_score: z.boolean(),
   time_limit_expired: z.boolean(),
@@ -210,6 +212,82 @@ export const SprocSyncAssessmentsSchema = z.object({
 // because `Team` comes before `TeamConfig` alphabetically.
 // *******************************************************************************
 
+export const AssessmentAccessControlRuleSchema = z.object({
+  // After complete fields
+  after_complete_hide_questions: z.boolean().nullable(),
+  after_complete_hide_questions_again_date: DateFromISOString.nullable(),
+  after_complete_hide_questions_again_date_overridden: z.boolean(),
+  after_complete_hide_score: z.boolean().nullable(),
+  after_complete_show_questions_again_date: DateFromISOString.nullable(),
+  after_complete_show_questions_again_date_overridden: z.boolean(),
+  after_complete_show_score_again_date: DateFromISOString.nullable(),
+  after_complete_show_score_again_date_overridden: z.boolean(),
+
+  assessment_id: IdSchema,
+
+  // Date control fields
+  date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
+  date_control_after_last_deadline_credit: z.number().nullable(),
+  date_control_after_last_deadline_credit_overridden: z.boolean(),
+  date_control_due_date: DateFromISOString.nullable(),
+  date_control_due_date_overridden: z.boolean(),
+  date_control_duration_minutes: z.number().nullable(),
+  date_control_duration_minutes_overridden: z.boolean(),
+  date_control_early_deadlines_overridden: z.boolean(),
+  date_control_late_deadlines_overridden: z.boolean(),
+  date_control_password: z.string().nullable(),
+  date_control_password_overridden: z.boolean(),
+  date_control_release_date: DateFromISOString.nullable(),
+
+  id: IdSchema,
+  list_before_release: z.boolean().nullable(),
+  number: z.number(),
+
+  // Target type: 'none' for main rule (applies to all), 'student_label' for labels, 'enrollment' for individual students
+  target_type: z.enum(['none', 'student_label', 'enrollment']),
+});
+export type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
+
+export const AssessmentAccessControlEarlyDeadlineSchema = z.object({
+  assessment_access_control_rule_id: IdSchema,
+  credit: z.number().int(),
+  date: DateFromISOString,
+  id: IdSchema,
+});
+
+export const AssessmentAccessControlEnrollmentSchema = z.object({
+  assessment_access_control_rule_id: IdSchema,
+  enrollment_id: IdSchema,
+  id: IdSchema,
+  target_type: z.literal('enrollment'),
+});
+export type AssessmentAccessControlEnrollment = z.infer<
+  typeof AssessmentAccessControlEnrollmentSchema
+>;
+
+export const AssessmentAccessControlLateDeadlineSchema = z.object({
+  assessment_access_control_rule_id: IdSchema,
+  credit: z.number().int(),
+  date: DateFromISOString,
+  id: IdSchema,
+});
+
+export const AssessmentAccessControlPrairietestExamSchema = z.object({
+  assessment_access_control_rule_id: IdSchema,
+  id: IdSchema,
+  read_only: z.boolean(),
+  uuid: z.string(),
+});
+
+export const AssessmentAccessControlStudentLabelSchema = z.object({
+  assessment_access_control_rule_id: IdSchema,
+  id: IdSchema,
+  student_label_id: IdSchema,
+  target_type: z.literal('student_label'),
+});
+export type AssessmentAccessControlStudentLabel = z.infer<
+  typeof AssessmentAccessControlStudentLabelSchema
+>;
 export const AccessTokenSchema = z.object({
   created_at: DateFromISOString,
   id: IdSchema,
@@ -226,6 +304,21 @@ export const AdministratorSchema = z.object({
   user_id: IdSchema,
 });
 export type Administrator = z.infer<typeof AdministratorSchema>;
+
+export const AiGradingCreditPoolChangeSchema = z.object({
+  ai_grading_job_id: IdSchema.nullable(),
+  assessment_question_id: IdSchema.nullable(),
+  course_instance_id: IdSchema,
+  created_at: DateFromISOString,
+  credit_after_milli_dollars: z.coerce.number(),
+  credit_before_milli_dollars: z.coerce.number(),
+  credit_type: z.enum(['transferable', 'non_transferable']),
+  delta_milli_dollars: z.coerce.number(),
+  id: IdSchema,
+  reason: z.string(),
+  user_id: IdSchema.nullable(),
+});
+export type AiGradingCreditPoolChange = z.infer<typeof AiGradingCreditPoolChangeSchema>;
 
 export const AiGradingJobSchema = z.object({
   completion: z.any(),
@@ -285,6 +378,10 @@ export const AlternativeGroupSchema = z.object({
   zone_id: IdSchema,
 });
 export type AlternativeGroup = z.infer<typeof AlternativeGroupSchema>;
+
+// The DB table is still "alternative_groups"; this alias lets the codebase use "pool" terminology.
+export const AlternativePoolSchema = AlternativeGroupSchema;
+export type AlternativePool = AlternativeGroup;
 
 export const AssessmentScoreLogSchema = null;
 export const AssessmentStateLogSchema = null;
@@ -631,6 +728,8 @@ export const CourseInstanceSchema = z.object({
   ai_grading_use_custom_api_keys: z.boolean(),
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,
+  credit_non_transferable_milli_dollars: z.coerce.number(),
+  credit_transferable_milli_dollars: z.coerce.number(),
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
   enrollment_code: z.string(),
@@ -1624,9 +1723,16 @@ export type Zone = z.infer<typeof ZoneSchema>;
 export const TableNames = [
   'access_tokens',
   'administrators',
+  'ai_grading_credit_pool_changes',
   'ai_grading_jobs',
   'ai_question_generation_messages',
   'ai_question_generation_prompts',
+  'assessment_access_control_early_deadlines',
+  'assessment_access_control_enrollments',
+  'assessment_access_control_late_deadlines',
+  'assessment_access_control_prairietest_exams',
+  'assessment_access_control_rules',
+  'assessment_access_control_student_labels',
   'alternative_groups',
   'assessment_access_rules',
   'assessment_instance_crossed_lockpoints',
