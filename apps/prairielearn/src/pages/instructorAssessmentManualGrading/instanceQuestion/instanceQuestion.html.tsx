@@ -95,14 +95,14 @@ export function InstanceQuestion({
         document.urlPrefix = '${resLocals.urlPrefix}';
       </script>
       <style>
-        .kbd {
+        .pl-kbd {
           display: inline-block;
           padding: 0.25rem;
           font-weight: 600;
           text-box: trim-both cap alphabetic;
         }
 
-        .kbd.kbd-semi-transparent {
+        .pl-kbd.kbd-semi-transparent {
           background-color: #c9d0d78f;
           color: inherit;
           border: 1px solid currentColor;
