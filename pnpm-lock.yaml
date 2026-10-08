@@ -1037,6 +1037,9 @@ importers:
       pg:
         specifier: ^8.23.0
         version: 8.23.0
+      playwright:
+        specifier: 1.63.0
+        version: 1.63.0
       prettier:
         specifier: ^3.9.9
         version: 3.9.9

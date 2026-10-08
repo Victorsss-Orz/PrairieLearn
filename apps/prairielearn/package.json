@@ -216,6 +216,7 @@
     "passport-azure-ad": "^4.3.5",
     "pem": "^1.14.8",
     "pg": "^8.23.0",
+    "playwright": "1.63.0",
     "prettier": "^3.9.9",
     "prosemirror-model": "^1.25.12",
     "prosemirror-state": "^1.4.4",

@@ -56,6 +56,7 @@ import { safeMustacheRender } from '../../../lib/mustache.js';
 import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
+import { captureAiGradingDrawings } from './ai-grading-drawing.js';
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
 import {
   type CounterClockwiseRotationDegrees,
@@ -108,6 +109,7 @@ export async function prepareQuestionPrompt(
     prompt = prompt.trim();
     if (!prompt) return [];
   }
+  prompt = await captureAiGradingDrawings(prompt);
   const $ = cheerio.load(prompt, null, false);
   const imageSources = new Set(
     $('img[src]')

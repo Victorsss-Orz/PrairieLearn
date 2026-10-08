@@ -97,6 +97,19 @@ function stripBootstrapAttributes(el: Element): void {
 export async function stripHtmlForAiGrading(html: string) {
   const $ = cheerio.load(html, null, false);
 
+  // Keep drawing initialization until prompt preparation can render it in a browser.
+  $('.pl-drawing-container').each((_, drawing) => {
+    const script = $(drawing).next('script');
+    const placeholder = $('<img>');
+    placeholder.attr(
+      'data-ai-grading-drawing-html',
+      Buffer.from($.html(drawing) + $.html(script)).toString('base64'),
+    );
+    placeholder.attr('alt', $(drawing).find('canvas').attr('aria-label') ?? 'Drawing');
+    $(drawing).replaceWith(placeholder);
+    script.remove();
+  });
+
   // Remove elements that are guaranteed to be irrelevant to grading.
   $('script').remove();
   $('style').remove();
@@ -132,7 +145,7 @@ export async function stripHtmlForAiGrading(html: string) {
   if (result.length > 10000) {
     // Prevent denial of service attacks by skipping Prettier formatting
     // if the HTML is too large. 10,000 characters was chosen arbitrarily.
-    return html.trim();
+    return result.trim();
   }
 
   return (await formatHtmlWithPrettier(result)).trim();
